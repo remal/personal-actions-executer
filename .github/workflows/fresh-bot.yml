@@ -1,0 +1,16 @@
+name: Bump stale issues
+
+on:
+  schedule:
+  - cron: '0 1 * * *'
+  workflow_dispatch: { }
+
+jobs:
+  fresh-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - name: Bump stale issues
+      uses: c-hive/fresh-bot@v1
+      with:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
