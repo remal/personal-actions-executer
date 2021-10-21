@@ -20,5 +20,5 @@ jobs:
       with:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
         script: |
-          const notifications = await github.rest.activity.listNotificationsForAuthenticatedUser()
+          const notifications = await github.rest.activity.listNotificationsForAuthenticatedUser().then(it => it.data)
           console.log(JSON.stringify(notifications, null, 2))
