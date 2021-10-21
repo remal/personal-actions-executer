@@ -25,6 +25,18 @@ jobs:
           )
           notifications.forEach(notification => {
             if (notification.subject == null || notification.subject.type !== 'PullRequest') return;
+            if (notification.repository == null) return;
             
             console.log(JSON.stringify(notification, null, 2))
+
+            const repositoryUrl = notification.repository.url
+            let pullRequestId = notification.subject.url
+            if (pullRequestId.startsWith(repositoryUrl)) {
+              pullRequestId = pullRequestId.substring(repositoryUrl.length)
+            }
+            if (pullRequestId.startsWith('/pulls/')) {
+              pullRequestId = pullRequestId.substring('/pulls/'.length)
+            }
+
+            console.log(JSON.stringify(pullRequestId, null, 2))
           })
