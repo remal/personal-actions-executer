@@ -64,33 +64,33 @@ jobs:
                 const checksToSkip = [
                   'renovate/stability-days',
                 ]
-                const notSuccessfullChecks = (await github.paginate(
+                let notSuccessfullChecks = await github.paginate(
                   github.rest.checks.listForRef.endpoint.merge({
                     owner: notification.repository.owner.login,
                     repo: notification.repository.name,
                     ref: pullRequest.head.sha,
                   })
-                ))
-                  .filter(check =>
-                    !checksToSkip.includes(check.name)
-                    && check.conclusion != 'success'
-                    && check.pull_requests != null
-                    && check.pull_requests.find(pr => pr.id === pullRequest.id) != null
-                  )
-                notSuccessfullChecks.forEach(check => console.log("Check '" + check.name + "' state: " + check.conclusion))
+                )
+                notSuccessfullChecks = notSuccessfullChecks.filter(check =>
+                  !checksToSkip.includes(check.name)
+                  && check.conclusion != 'success'
+                  && check.pull_requests != null
+                  && check.pull_requests.find(pr => pr.id === pullRequest.id) != null
+                )
+                notSuccessfullChecks.forEach(check => console.log("Check '" + check.name + "' conclusion: " + check.conclusion))
                 console.log(JSON.stringify(notSuccessfullChecks, null, 2))
                 
-                const notSuccessfullStatuses = (await github.paginate(
+                let notSuccessfullStatuses = await github.paginate(
                   github.rest.repos.listCommitStatusesForRef.endpoint.merge({
                     owner: notification.repository.owner.login,
                     repo: notification.repository.name,
                     ref: pullRequest.head.sha,
                   })
-                ))
-                  .filter(status => 
-                    !checksToSkip.includes(status.context)
-                    && status.state != 'success'
-                  )
+                )
+                notSuccessfullStatuses = notSuccessfullStatuses.filter(status => 
+                  !checksToSkip.includes(status.context)
+                  && status.state != 'success'
+                )
                 notSuccessfullStatuses.forEach(status => console.log("Status '" + status.context + "' state: " + check.state))
                 console.log(JSON.stringify(notSuccessfullStatuses, null, 2))
                 
