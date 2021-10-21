@@ -78,7 +78,6 @@ jobs:
                   && check.pull_requests.find(pr => pr.id === pullRequest.id) != null
                 )
                 notSuccessfullChecks.forEach(check => console.log("Check '" + check.name + "' conclusion: " + check.conclusion))
-                console.log(JSON.stringify(notSuccessfullChecks, null, 2))
                 
                 let notSuccessfullStatuses = await github.paginate(
                   github.rest.repos.listCommitStatusesForRef.endpoint.merge({
@@ -92,7 +91,6 @@ jobs:
                   && status.state != 'success'
                 )
                 notSuccessfullStatuses.forEach(status => console.log("Status '" + status.context + "' state: " + status.state))
-                console.log(JSON.stringify(notSuccessfullStatuses, null, 2))
                 
                 canNotificationBeDeleted = notSuccessfullChecks.length === 0 && notSuccessfullStatuses.length === 0
               }
