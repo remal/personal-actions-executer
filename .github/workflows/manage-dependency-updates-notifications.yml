@@ -50,12 +50,33 @@ jobs:
             if (pullRequest.user.login === 'renovate[bot]'
               || pullRequest.user.login === 'dependabot[bot]'
             ) {
-              const canNotificationBeDeleted = (pullRequest.merged)
+            
+              let canNotificationBeDeleted = pullRequest.merged
+            
+              if (!canNotificationBeDeleted) {
+                let statusesRef = pullRequest.statuses_url
+                if (statusesRef.startsWith(repositoryUrl)) {
+                  statusesRef = statusesRef.substring(repositoryUrl.length)
+                }
+                if (statusesRef.startsWith('/statuses/')) {
+                  statusesRef = pullRequestId.substring('/statuses/'.length)
+                }
+                const statuses = await github.paginate(
+                  github.rest.repos.listCommitStatusesForRef.endpoint.merge({
+                    owner: notification.repository.owner.login,
+                    repo: notification.repository.name,
+                    ref: statusesRef,
+                  })
+                )
+                console.log(JSON.stringify(statuses, null, 2))
+              }
+              
               if (canNotificationBeDeleted) {
                 console.log("Marking thread as read: '" + notification.subject.title + "' (" + notification.id + ")")
                 await github.rest.activity.markThreadAsRead({
                   thread_id: notification.id,
                 })
               }
+              
             }
           }
