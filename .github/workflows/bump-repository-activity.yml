@@ -7,7 +7,7 @@ on:
     branches:
     - main
     paths:
-    - '.github/workflows/bump-activity.yml'
+    - '.github/workflows/bump-repository-activity.yml'
   workflow_dispatch: { }
 
 jobs:
