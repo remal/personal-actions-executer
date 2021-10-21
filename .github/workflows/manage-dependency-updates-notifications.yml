@@ -23,7 +23,7 @@ jobs:
           const notifications = await github.paginate(
             github.rest.activity.listNotificationsForAuthenticatedUser.endpoint.merge({})
           )
-          notifications.forEach(notification => {
+          notifications.forEach(async notification => {
             if (notification.subject == null || notification.subject.type !== 'PullRequest') return;
             if (notification.repository == null) return;
             
