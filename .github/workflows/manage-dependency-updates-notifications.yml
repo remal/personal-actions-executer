@@ -64,13 +64,13 @@ jobs:
                 const checksToSkip = [
                   'renovate/stability-days',
                 ]
-                const notSuccessfullChecks = await github.paginate(
+                const notSuccessfullChecks = (await github.paginate(
                   github.rest.checks.listForRef.endpoint.merge({
                     owner: notification.repository.owner.login,
                     repo: notification.repository.name,
                     ref: pullRequest.head.sha,
                   })
-                )
+                ))
                   .filter(check =>
                     !checksToSkip.includes(check.name)
                     && check.conclusion != 'success'
@@ -80,13 +80,13 @@ jobs:
                 notSuccessfullChecks.forEach(check => console.log("Check '" + check.name + "' state: " + check.conclusion))
                 console.log(JSON.stringify(notSuccessfullChecks, null, 2))
                 
-                const notSuccessfullStatuses = await github.paginate(
+                const notSuccessfullStatuses = (await github.paginate(
                   github.rest.repos.listCommitStatusesForRef.endpoint.merge({
                     owner: notification.repository.owner.login,
                     repo: notification.repository.name,
                     ref: pullRequest.head.sha,
                   })
-                )
+                ))
                   .filter(status => 
                     !checksToSkip.includes(status.context)
                     && status.state != 'success'
