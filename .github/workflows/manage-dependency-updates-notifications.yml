@@ -37,6 +37,12 @@ jobs:
             if (pullRequestId.startsWith('/pulls/')) {
               pullRequestId = pullRequestId.substring('/pulls/'.length)
             }
+            
+            const pullRequest = await github.rest.pulls.get({
+              owner: notification.repository.owner.login,
+              repo: notification.repository.name,
+              pull_number: pullRequestId,
+            })
 
-            console.log(JSON.stringify(pullRequestId, null, 2))
+            console.log(JSON.stringify(pullRequest, null, 2))
           })
