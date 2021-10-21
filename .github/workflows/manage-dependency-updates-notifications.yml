@@ -61,4 +61,4 @@ jobs:
             }
 
             console.log(JSON.stringify(pullRequest, null, 2))
-          })
+          }
