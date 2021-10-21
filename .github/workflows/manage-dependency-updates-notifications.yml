@@ -20,5 +20,11 @@ jobs:
       with:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
         script: |
-          const notifications = await github.rest.activity.listNotificationsForAuthenticatedUser().then(it => it.data)
-          console.log(JSON.stringify(notifications, null, 2))
+          const notifications = await github.paginate(
+            github.rest.activity.listNotificationsForAuthenticatedUser.endpoint.merge({})
+          )
+          notifications.forEach(notification => {
+            if (notification.subject == null || notification.subject.type !== 'PullRequest') return;
+            
+            console.log(JSON.stringify(notification, null, 2))
+          })
