@@ -11,7 +11,7 @@ on:
   workflow_dispatch: { }
 
 jobs:
-  bump-activity:
+  bump-repository-activity:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
