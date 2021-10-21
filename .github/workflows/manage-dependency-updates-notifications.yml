@@ -59,7 +59,7 @@ jobs:
                   statusesRef = statusesRef.substring(repositoryUrl.length)
                 }
                 if (statusesRef.startsWith('/statuses/')) {
-                  statusesRef = pullRequestId.substring('/statuses/'.length)
+                  statusesRef = statusesRef.substring('/statuses/'.length)
                 }
                 const statuses = await github.paginate(
                   github.rest.repos.listCommitStatusesForRef.endpoint.merge({
