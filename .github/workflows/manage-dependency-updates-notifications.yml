@@ -2,7 +2,7 @@ name: Manage dependency updates notifications
 
 on:
   schedule:
-  - cron: '11 * * * *'
+  - cron: '0/15 * * * *'
   push:
     branches:
     - main
@@ -31,7 +31,6 @@ jobs:
               console.log(JSON.stringify(notification, null, 2))
               continue;
             }
-            console.log(JSON.stringify(notification, null, 2))
 
             const repositoryUrl = notification.repository.url
             let pullRequestId = notification.subject.url
@@ -53,12 +52,10 @@ jobs:
             ) {
               const canNotificationBeDeleted = (pullRequest.merged)
               if (canNotificationBeDeleted) {
-                console.log("Marking thread as read: " + notification.subject.title + " (" + notification.id + ")")
+                console.log("Marking thread as read: '" + notification.subject.title + "' (" + notification.id + ")")
                 await github.rest.activity.markThreadAsRead({
                   thread_id: notification.id,
                 })
               }
             }
-
-            console.log(JSON.stringify(pullRequest, null, 2))
           }
