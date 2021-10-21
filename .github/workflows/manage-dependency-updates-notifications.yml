@@ -23,10 +23,14 @@ jobs:
           const notifications = await github.paginate(
             github.rest.activity.listNotificationsForAuthenticatedUser.endpoint.merge({})
           )
-          notifications.forEach(async notification => {
-            if (notification.subject == null || notification.subject.type !== 'PullRequest') return;
-            if (notification.repository == null) return;
+          for (const notification of notifications) {
+            if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
+            if (notification.repository == null) continue;
             
+            if (notification.reason !== 'assign') {
+              console.log(JSON.stringify(notification, null, 2))
+              continue;
+            }
             console.log(JSON.stringify(notification, null, 2))
 
             const repositoryUrl = notification.repository.url
@@ -42,7 +46,19 @@ jobs:
               owner: notification.repository.owner.login,
               repo: notification.repository.name,
               pull_number: pullRequestId,
-            })
+            }).then(it => it.data)
+            
+            if (pullRequest.user.login === 'renovate[bot]'
+              || pullRequest.user.login === 'dependabot[bot]'
+            ) {
+              const canNotificationBeDeleted = (pullRequest.merged)
+              if (canNotificationBeDeleted) {
+                console.log("Marking thread as read: " + notification.subject.title + " (" + notification.id + ")")
+                await github.rest.activity.markThreadAsRead({
+                  thread_id: notification.id,
+                }
+              }
+            }
 
             console.log(JSON.stringify(pullRequest, null, 2))
           })
