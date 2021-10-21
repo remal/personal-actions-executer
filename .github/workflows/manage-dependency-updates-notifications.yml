@@ -46,6 +46,7 @@ jobs:
               repo: notification.repository.name,
               pull_number: pullRequestId,
             }).then(it => it.data)
+            console.log(JSON.stringify(pullRequest, null, 2))
             
             if (pullRequest.user.login === 'renovate[bot]'
               || pullRequest.user.login === 'dependabot[bot]'
