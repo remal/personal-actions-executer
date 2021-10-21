@@ -1,0 +1,24 @@
+name: Manage dependency updates notifications
+
+on:
+  schedule:
+  - cron: '11 * * * *'
+  push:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/manage-dependency-updates-notifications.yml'
+  workflow_dispatch: { }
+
+jobs:
+  manage-dependency-updates-notifications:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - name: Manage dependency updates notifications
+      uses: actions/github-script@v5
+      with:
+        github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
+        script: |
+          const notifications = await octokit.rest.activity.listNotificationsForAuthenticatedUser()
+          console.log(JSON.stringify(notifications, null, 2))
