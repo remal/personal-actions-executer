@@ -20,5 +20,5 @@ jobs:
       with:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
         script: |
-          const notifications = await octokit.rest.activity.listNotificationsForAuthenticatedUser()
+          const notifications = await github.rest.activity.listNotificationsForAuthenticatedUser()
           console.log(JSON.stringify(notifications, null, 2))
