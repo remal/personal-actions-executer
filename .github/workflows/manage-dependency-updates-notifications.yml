@@ -65,6 +65,7 @@ jobs:
               if (!canNotificationBeDeleted) {
                 const checksToSkip = [
                   'renovate/stability-days',
+                  'lift',
                 ]
                 let notSuccessfullChecks = await github.paginate(
                   github.rest.checks.listForRef.endpoint.merge({
