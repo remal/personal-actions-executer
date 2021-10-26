@@ -27,7 +27,9 @@ jobs:
             if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
             if (notification.repository == null) continue;
             
-            if (notification.reason !== 'assign') {
+            if (notification.reason !== 'assign'
+              && notification.reason !== 'review_requested'
+            ) {
               console.log(JSON.stringify(notification, null, 2))
               continue;
             }
