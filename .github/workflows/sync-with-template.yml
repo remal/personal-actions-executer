@@ -41,8 +41,7 @@ jobs:
                 return
               }
               
-              const workflow = workflowFile.replace(/^.*\/([^/]+?)(\.[^.]+)?$/, '$1')
-              core.info("Creating a workflow dispatch event for " + workflow)
+              core.info("Creating a workflow dispatch event for " + workflowFile)
               await github.rest.actions.createWorkflowDispatch({
                 owner: repo.owner.login,
                 repo: repo.name,
