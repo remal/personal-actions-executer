@@ -14,7 +14,9 @@ jobs:
   fresh-bot:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    concurrency: fresh-bot
+    concurrency:
+      group: fresh-bot
+      cancel-in-progress: true
     steps:
     - name: Bump stale issues
       uses: c-hive/fresh-bot@v1
