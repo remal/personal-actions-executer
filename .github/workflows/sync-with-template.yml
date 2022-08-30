@@ -22,6 +22,7 @@ jobs:
             visibility: 'public',
           })
           for (const repo of repos) {
+            core.info("Processing " + repo.full_name)
             const workflowExists = await github.rest.repos.getContent({
               owner: repo.owner.login,
               repo: repo.name,
