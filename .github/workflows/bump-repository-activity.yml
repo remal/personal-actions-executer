@@ -14,6 +14,7 @@ jobs:
   bump-repository-activity:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    concurrency: bump-repository-activity
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -27,5 +28,5 @@ jobs:
     - name: Push back
       uses: remal-github-actions/push-back@v1
       with:
-        githubToken: ${{ secrets.PUSH_BACK_TOKEN }}
+        githubToken: ${{secrets.PUSH_BACK_TOKEN}}
         message: '[push-back] Bump repository activity'
