@@ -36,7 +36,7 @@ jobs:
                 error => { if (error.response && error.response.status === 404) return false; else throw error; }
               )
               
-              const workflow = workflowFile.replace(/^.*\/([^/]+)$/, '$1')
+              const workflow = workflowFile.replace(/^.*\/([^/]+?)(\.[^.]+)?$/, '$1')
               core.info('Creating a workflow dispatch event for ' + workflow)
               await github.rest.actions.createWorkflowDispatch({
                 owner: repo.owner.login,
