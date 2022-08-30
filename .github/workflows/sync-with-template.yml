@@ -19,8 +19,12 @@ jobs:
         github-token: ${{secrets.PERSONAL_ACCESS_TOKEN}}    
         script: |
           const repos = await github.paginate(github.rest.repos.listForAuthenticatedUser, {
-            affiliation: 'owner',
+            visibility: 'public',
           })
           for (const repo of repos) {
-            console.log(repo.full_name)
+            const workflowExists = github.rest.repos.getContent({
+              owner: repo.owner.login,
+              repo: repo.name,
+              path: 'asd/.github/workflows/sync-with-template.yml',
+            })
           }
