@@ -46,7 +46,7 @@ jobs:
               await github.rest.actions.createWorkflowDispatch({
                 owner: repo.owner.login,
                 repo: repo.name,
-                workflow_id: workflow,
+                workflow_id: workflowFile,
                 ref: repo.default_branch,
               })
             })
