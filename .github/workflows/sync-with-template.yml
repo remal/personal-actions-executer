@@ -22,9 +22,13 @@ jobs:
             visibility: 'public',
           })
           for (const repo of repos) {
-            const workflowExists = github.rest.repos.getContent({
+            const workflowExists = await github.rest.repos.getContent({
               owner: repo.owner.login,
               repo: repo.name,
               path: 'asd/.github/workflows/sync-with-template.yml',
-            })
+            }).then(
+              () => true,
+              error => { if (error.response && error.response.status === 404) return false else throw error }
+            )
+            core.info('workflowExists: ' + workflowExists)
           }
