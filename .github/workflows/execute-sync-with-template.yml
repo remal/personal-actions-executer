@@ -5,7 +5,7 @@ on:
     branches:
     - main
     paths:
-    - '.github/workflows/sync-with-template.yml'
+    - '.github/workflows/execute-sync-with-template.yml'
   workflow_dispatch: { }
 
 jobs:
