@@ -13,12 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-    - name: Manage dependency updates notifications
+    - name: Execute sync-with-template.yml for all repos
       uses: actions/github-script@v5
       with:
         github-token: ${{secrets.PERSONAL_ACCESS_TOKEN}}    
         script: |
-          const repos = await github.paginate(github.rest.repos.listForAuthenticatedUser)
+          const repos = await github.paginate(github.rest.repos.listForAuthenticatedUser, {
+            affiliation: 'owner',
+          })
           for (const repo of repos) {
             console.log(repo.full_name)
           }
