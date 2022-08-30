@@ -22,15 +22,27 @@ jobs:
             visibility: 'public',
           })
           for (const repo of repos) {
+            if (repo.fork) continue
+            if (repo.archived) continue
+            if (!repo.permissions.push) continue
             await core.group("Processing " + repo.full_name, async () => {
+              const workflowFile = '.github/workflows/sync-with-template.yml'
               const workflowExists = await github.rest.repos.getContent({
                 owner: repo.owner.login,
                 repo: repo.name,
-                path: '.github/workflows/sync-with-template.yml',
+                path: workflowFile,
               }).then(
                 () => true,
                 error => { if (error.response && error.response.status === 404) return false; else throw error; }
               )
-              core.info('workflowExists: ' + workflowExists)
+              
+              const workflow = workflowFile.replace(/^.*\/([^/]+)$/, '$1')
+              core.info('Creating a workflow dispatch event for ' + workflow)
+              await github.rest.actions.createWorkflowDispatch({
+                owner: repo.owner.login,
+                repo: repo.name,
+                workflow_id: workflow,
+                ref: repo.default_branch,
+              })
             })
           }
