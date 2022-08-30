@@ -12,7 +12,9 @@ jobs:
   sync-with-template:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    concurrency: execute-sync-with-template
+    concurrency:
+      group: execute-sync-with-template
+      cancel-in-progress: true
     steps:
     - name: Execute sync-with-template.yml for all repos
       uses: actions/github-script@v5
