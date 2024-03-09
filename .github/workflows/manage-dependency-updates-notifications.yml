@@ -24,10 +24,10 @@ jobs:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
         script: |
           const notifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
-            all: true,
+            //all: true,
           })
           for (const notification of notifications) {
-            console.log(JSON.stringify(notification, null, 2))
+            //console.log(JSON.stringify(notification, null, 2))
             if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
             if (notification.repository == null) continue;
 
