@@ -23,8 +23,23 @@ jobs:
       with:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
         script: |
+          if (github.rest.activity.markThreadAsDone == null) {
+            Object.assign(github.rest.activity, {
+              markThreadAsDone: octokit.request.defaults({
+                method: "DELETE",
+                url: "/notifications/threads/{thread_id}",
+                params: {
+                  thread_id: {
+                    required: true,
+                    type: "string",
+                  },
+                },
+              }),
+            })
+          }
+
           const notifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
-            //all: true,
+            all: true,
           })
           for (const notification of notifications) {
             //console.log(JSON.stringify(notification, null, 2))
@@ -103,21 +118,19 @@ jobs:
               }
 
               if (canNotificationBeDeleted) {
+                /*
                 console.log("Marking thread as read")
                 await github.rest.activity.markThreadAsRead({
                   thread_id: notification.id,
                 })
-
-                try {
-                  console.log("Marking thread as done")
-                  await github.rest.activity.markThreadAsDone({
-                    thread_id: notification.id,
-                  })
-                } catch (e) {
-                  console.log("::warning::" + e)
-                }
+                /*/
+                console.log("Marking thread as done")
+                await github.rest.activity.markThreadAsDone({
+                  thread_id: notification.id,
+                })
+                console.log("::endgroup::"); break;
+                //*/
               }
-
             }
             console.log("::endgroup::")
           }
