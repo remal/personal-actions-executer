@@ -43,8 +43,8 @@ jobs:
             all: true,
           })
           for (const notification of notifications) {
-            console.log(JSON.stringify(notification))
             if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
+            console.log(JSON.stringify(notification))
             if (notification.repository == null) continue;
 
             if (notification.reason !== 'assign'
