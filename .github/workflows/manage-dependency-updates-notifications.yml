@@ -27,6 +27,7 @@ jobs:
             github.rest.activity.listNotificationsForAuthenticatedUser.endpoint.merge({})
           )
           for (const notification of notifications) {
+            console.log(JSON.stringify(notification, null, 2))
             if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
             if (notification.repository == null) continue;
 
