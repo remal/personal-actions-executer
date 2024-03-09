@@ -87,13 +87,11 @@ jobs:
                   'renovate/stability-days',
                   'lift',
                 ]
-                let notSuccessfullChecks = await github.paginate(
-                  github.rest.checks.listForRef.endpoint.merge({
-                    owner: notification.repository.owner.login,
-                    repo: notification.repository.name,
-                    ref: pullRequest.head.sha,
-                  })
-                )
+                let notSuccessfullChecks = await github.paginate(github.rest.checks.listForRef, {
+                  owner: notification.repository.owner.login,
+                  repo: notification.repository.name,
+                  ref: pullRequest.head.sha,
+                })
                 notSuccessfullChecks = notSuccessfullChecks.filter(check =>
                   !checksToSkip.includes(check.name)
                   && check.conclusion != 'success'
@@ -102,13 +100,11 @@ jobs:
                 )
                 notSuccessfullChecks.forEach(check => console.log("Check '" + check.name + "' conclusion: " + check.conclusion))
 
-                let notSuccessfullStatuses = await github.paginate(
-                  github.rest.repos.listCommitStatusesForRef.endpoint.merge({
-                    owner: notification.repository.owner.login,
-                    repo: notification.repository.name,
-                    ref: pullRequest.head.sha,
-                  })
-                )
+                let notSuccessfullStatuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
+                  owner: notification.repository.owner.login,
+                  repo: notification.repository.name,
+                  ref: pullRequest.head.sha,
+                })
                 notSuccessfullStatuses = notSuccessfullStatuses.filter(status =>
                   !checksToSkip.includes(status.context)
                   && status.state != 'success'
