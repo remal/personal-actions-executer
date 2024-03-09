@@ -24,6 +24,7 @@ jobs:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
         script: |
           if (github.rest.activity.markThreadAsDone == null) {
+            console.log("::warning::Registering `activity.markThreadAsDone`")
             Object.assign(github.rest.activity, {
               markThreadAsDone: github.request.defaults({
                 method: "DELETE",
@@ -42,7 +43,7 @@ jobs:
             all: true,
           })
           for (const notification of notifications) {
-            //console.log(JSON.stringify(notification, null, 2))
+            console.log(JSON.stringify(notification, null, 2))
             if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
             if (notification.repository == null) continue;
 
