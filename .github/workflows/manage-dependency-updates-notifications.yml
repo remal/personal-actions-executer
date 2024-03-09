@@ -78,7 +78,7 @@ jobs:
               if (!canNotificationBeDeleted) {
                 canNotificationBeDeleted = pullRequest.merged
                 if (canNotificationBeDeleted) {
-                  console.log("Pell Request is merged")
+                  console.log("Pull Request is merged")
                 }
               }
 
