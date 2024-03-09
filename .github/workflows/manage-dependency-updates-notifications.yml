@@ -23,9 +23,9 @@ jobs:
       with:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
         script: |
-          const notifications = await github.paginate(
-            github.rest.activity.listNotificationsForAuthenticatedUser.endpoint.merge({})
-          )
+          const notifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
+            all: true,
+          })
           for (const notification of notifications) {
             console.log(JSON.stringify(notification, null, 2))
             if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
@@ -103,10 +103,19 @@ jobs:
               }
 
               if (canNotificationBeDeleted) {
-                console.log("Marking thread as done")
-                await github.rest.activity.markThreadAsDone({
+                console.log("Marking thread as read")
+                await github.rest.activity.markThreadAsRead({
                   thread_id: notification.id,
                 })
+
+                try {
+                  console.log("Marking thread as done")
+                  await github.rest.activity.markThreadAsDone({
+                    thread_id: notification.id,
+                  })
+                } catch (e) {
+                  console.log("::warning::" + e)
+                }
               }
 
             }
