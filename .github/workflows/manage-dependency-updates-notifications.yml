@@ -29,7 +29,7 @@ jobs:
           for (const notification of notifications) {
             if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
             if (notification.repository == null) continue;
-            
+
             if (notification.reason !== 'assign'
               && notification.reason !== 'review_requested'
             ) {
@@ -45,18 +45,18 @@ jobs:
             if (pullRequestId.startsWith('/pulls/')) {
               pullRequestId = pullRequestId.substring('/pulls/'.length)
             }
-            
+
             const pullRequest = await github.rest.pulls.get({
               owner: notification.repository.owner.login,
               repo: notification.repository.name,
               pull_number: pullRequestId,
             }).then(it => it.data)
             console.log("::group::Pull Request '" + notification.subject.title + "' (" + notification.id + ")")
-            
+
             if (pullRequest.user.login === 'renovate[bot]'
               || pullRequest.user.login === 'dependabot[bot]'
             ) {
-            
+
               let canNotificationBeDeleted = false
               if (!canNotificationBeDeleted) {
                 canNotificationBeDeleted = pullRequest.merged
@@ -64,7 +64,7 @@ jobs:
                   console.log("Pell Request is merged")
                 }
               }
-            
+
               if (!canNotificationBeDeleted) {
                 const checksToSkip = [
                   'renovate/stability-days',
@@ -84,7 +84,7 @@ jobs:
                   && check.pull_requests.find(pr => pr.id === pullRequest.id) != null
                 )
                 notSuccessfullChecks.forEach(check => console.log("Check '" + check.name + "' conclusion: " + check.conclusion))
-                
+
                 let notSuccessfullStatuses = await github.paginate(
                   github.rest.repos.listCommitStatusesForRef.endpoint.merge({
                     owner: notification.repository.owner.login,
@@ -92,22 +92,22 @@ jobs:
                     ref: pullRequest.head.sha,
                   })
                 )
-                notSuccessfullStatuses = notSuccessfullStatuses.filter(status => 
+                notSuccessfullStatuses = notSuccessfullStatuses.filter(status =>
                   !checksToSkip.includes(status.context)
                   && status.state != 'success'
                 )
                 notSuccessfullStatuses.forEach(status => console.log("Status '" + status.context + "' state: " + status.state))
-                
+
                 canNotificationBeDeleted = notSuccessfullChecks.length === 0 && notSuccessfullStatuses.length === 0
               }
-              
+
               if (canNotificationBeDeleted) {
-                console.log("Marking thread as read")
-                await github.rest.activity.markThreadAsRead({
+                console.log("Marking thread as done")
+                await github.rest.activity.markThreadAsDone({
                   thread_id: notification.id,
                 })
               }
-              
+
             }
             console.log("::endgroup::")
           }
