@@ -118,18 +118,10 @@ jobs:
               }
 
               if (canNotificationBeDeleted) {
-                /*
-                console.log("Marking thread as read")
-                await github.rest.activity.markThreadAsRead({
-                  thread_id: notification.id,
-                })
-                /*/
                 console.log("Marking thread as done")
                 await github.rest.activity.markThreadAsDone({
                   thread_id: notification.id,
                 })
-                console.log("::endgroup::"); break;
-                //*/
               }
             }
             console.log("::endgroup::")
