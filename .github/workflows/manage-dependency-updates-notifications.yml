@@ -33,7 +33,7 @@ jobs:
             if (notification.reason !== 'assign'
               && notification.reason !== 'review_requested'
             ) {
-              console.log(JSON.stringify(notification, null, 2))
+              //console.log(JSON.stringify(notification, null, 2))
               continue;
             }
 
