@@ -74,48 +74,15 @@ jobs:
             if (pullRequest.user.login === 'renovate[bot]'
               || pullRequest.user.login === 'dependabot[bot]'
             ) {
-
               let canNotificationBeDeleted = false
               if (!canNotificationBeDeleted) {
-                canNotificationBeDeleted = pullRequest.merged
-                if (canNotificationBeDeleted) {
+                if (pullRequest.merged) {
+                  canNotificationBeDeleted = true
                   console.log("Pull Request is merged")
                 }
               }
 
-              if (!canNotificationBeDeleted) {
-                const checksToSkip = [
-                  'renovate/stability-days',
-                  'lift',
-                ]
-                let notSuccessfullChecks = await github.paginate(github.rest.checks.listForRef, {
-                  owner: notification.repository.owner.login,
-                  repo: notification.repository.name,
-                  ref: pullRequest.head.sha,
-                })
-                notSuccessfullChecks = notSuccessfullChecks.filter(check =>
-                  !checksToSkip.includes(check.name)
-                  && check.conclusion != 'success'
-                  && check.pull_requests != null
-                  && check.pull_requests.find(pr => pr.id === pullRequest.id) != null
-                )
-                notSuccessfullChecks.forEach(check => console.log("Check '" + check.name + "' conclusion: " + check.conclusion))
-
-                let notSuccessfullStatuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
-                  owner: notification.repository.owner.login,
-                  repo: notification.repository.name,
-                  ref: pullRequest.head.sha,
-                })
-                notSuccessfullStatuses = notSuccessfullStatuses.filter(status =>
-                  !checksToSkip.includes(status.context)
-                  && status.state != 'success'
-                )
-                notSuccessfullStatuses.forEach(status => console.log("Status '" + status.context + "' state: " + status.state))
-
-                canNotificationBeDeleted = notSuccessfullChecks.length === 0 && notSuccessfullStatuses.length === 0
-              }
-
-              if (canNotificationBeDeleted) {
+              if (pullRequest.merged) {
                 console.log("Marking thread as done")
                 await github.rest.activity.markThreadAsDone({
                   thread_id: notification.id,
