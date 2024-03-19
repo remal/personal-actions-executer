@@ -76,7 +76,10 @@ jobs:
             ) {
               let canNotificationBeDeleted = false
               if (!canNotificationBeDeleted) {
-                if (pullRequest.merged) {
+                if (pullRequest.closed_at != null) {
+                  canNotificationBeDeleted = true
+                  console.log("Pull Request is closed")
+                } else if (pullRequest.merged_at != null) {
                   canNotificationBeDeleted = true
                   console.log("Pull Request is merged")
                 }
