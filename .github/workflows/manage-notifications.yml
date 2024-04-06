@@ -28,7 +28,7 @@ jobs:
       id: decision
       run: |
         echo "Core rate limit usage: ${{steps.getRateLimits.outputs.coreUsage}}"
-        if [ "${{steps.getRateLimits.outputs.coreUsage < 25}}" == "true" ]; then
+        if [ "${{steps.getRateLimits.outputs.coreUsage < 50}}" == "true" ]; then
           echo "Enough rate limits"
           echo 'enough=true' >> $GITHUB_OUTPUT
         else
@@ -73,10 +73,10 @@ jobs:
           }
 
           const nowMillis = new Date().getTime()
-          const sinceMillis = nowMillis - (2 * 24 * 3600 * 1000)
+          const sinceMillis = nowMillis - (7 * 24 * 3600 * 1000)
           const notifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
-            //all: true,
-            //since: new Date(sinceMillis).toISOString(),
+            all: true,
+            since: new Date(sinceMillis).toISOString(),
           })
           for (const notification of notifications) {
             const notificationToLog = { ...notification }
@@ -109,8 +109,9 @@ jobs:
           }
 
           for (const notification of notifications) {
-            if (notification.subject?.type !== 'PullRequest') continue;
-            if (notification.repository == null) continue;
+            if (!notification.unread) continue
+            if (notification.subject?.type !== 'PullRequest') continue
+            if (notification.repository == null) continue
 
             if (notification.reason !== 'assign'
               && notification.reason !== 'subscribed'
