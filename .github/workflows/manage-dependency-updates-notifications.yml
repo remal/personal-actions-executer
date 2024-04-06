@@ -11,7 +11,35 @@ on:
   workflow_dispatch: { }
 
 jobs:
+  rate-limits:
+    name: Check rate limits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency: bump-repository-activity
+    steps:
+    - name: Get rate limits
+      uses: remal-github-actions/get-rate-limits@v1
+      id: getRateLimits
+      with:
+        githubToken: ${{env.PUSH_BACK_TOKEN || github.token}}
+    - name: Make decision
+      id: decision
+      run: |
+        echo "Core rate limit usage: ${{steps.getRateLimits.outputs.coreUsage}}"
+        if [ "${{steps.getRateLimits.outputs.coreUsage < 25}}" == "true" ]; then
+          echo "Enough rate limits"
+          echo 'enough=true' >> $GITHUB_OUTPUT
+        else
+          echo "::warning::Not enough rate limits!"
+          echo 'enough=false' >> $GITHUB_OUTPUT
+        fi
+    outputs:
+      enough: ${{steps.decision.outputs.enough}}
+
   manage-dependency-updates-notifications:
+    needs:
+    - rate-limits
+    if: ${{github.event_name != 'schedule' || fromJSON(needs.rate-limits.outputs.enough) == true}}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:

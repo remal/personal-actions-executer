@@ -2,7 +2,7 @@ name: Bump stale issues
 
 on:
   schedule:
-  - cron: '0 1 * * *'
+  - cron: '41 1 * * */2'
   push:
     branches:
     - main
@@ -11,7 +11,38 @@ on:
   workflow_dispatch: { }
 
 jobs:
+  rate-limits:
+    name: Check rate limits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: fresh-bot
+      cancel-in-progress: true
+    steps:
+    - name: Get rate limits
+      uses: remal-github-actions/get-rate-limits@v1
+      id: getRateLimits
+      with:
+        githubToken: ${{env.PERSONAL_ACCESS_TOKEN || github.token}}
+    - name: Make decision
+      id: decision
+      run: |
+        echo "Core rate limit usage: ${{steps.getRateLimits.outputs.coreUsage}}"
+        if [ "${{steps.getRateLimits.outputs.coreUsage < 25}}" == "true" ]; then
+          echo "Enough rate limits"
+          echo 'enough=true' >> $GITHUB_OUTPUT
+        else
+          echo "::warning::Not enough rate limits!"
+          echo 'enough=false' >> $GITHUB_OUTPUT
+        fi
+    outputs:
+      enough: ${{steps.decision.outputs.enough}}
+
   fresh-bot:
+    needs:
+    - rate-limits
+    if: ${{github.event_name != 'schedule' || fromJSON(needs.rate-limits.outputs.enough) == true}}
+    name: Bump stale issues
     runs-on: ubuntu-latest
     timeout-minutes: 45
     concurrency:
