@@ -1,4 +1,4 @@
-name: Manage dependency updates notifications
+name: Manage notifications
 
 on:
   schedule:
