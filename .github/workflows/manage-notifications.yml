@@ -94,7 +94,7 @@ jobs:
             const title = notification.subject?.title ?? ''
 
             let notificationDeletionReason = null
-            if (title.match(/ workflow run cancelled for .* branch$/)) {
+            if (title.match(/ workflow run(, Attempt #\d+)? cancelled for .* branch$/)) {
               notificationDeletionReason = 'cancelled'
             }
 
