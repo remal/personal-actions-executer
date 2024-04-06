@@ -76,7 +76,14 @@ jobs:
             all: true,
           })
           for (const notification of notifications) {
-            console.log(JSON.stringify(notification))
+            const notificationToLog = { ...notification }
+            if (notificationToLog.repository) {
+              notificationToLog.repository = {}
+            }
+            console.log(JSON.stringify(notificationToLog, null, 2))
+          }
+
+          for (const notification of notifications) {
             if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
             if (notification.repository == null) continue;
 
