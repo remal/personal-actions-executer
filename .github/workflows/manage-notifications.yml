@@ -7,7 +7,7 @@ on:
     branches:
     - main
     paths:
-    - '.github/workflows/manage-dependency-updates-notifications.yml'
+    - '.github/workflows/manage-notifications.yml'
   workflow_dispatch: { }
 
 jobs:
