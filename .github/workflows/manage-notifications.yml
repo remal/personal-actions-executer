@@ -92,9 +92,15 @@ jobs:
           for (const notification of notifications) {
             if (notification.subject?.type !== 'CheckSuite') continue;
             const title = notification.subject?.title ?? ''
-            if (title.includes(' workflow run cancelled for ')) {
+
+            let notificationDeletionReason = null
+            if (title.match(/ workflow run cancelled for .* branch$/)) {
+              notificationDeletionReason = 'cancelled'
+            }
+
+            if (notificationDeletionReason != null) {
               console.log("::group::" + title)
-              console.log("Marking thread as done")
+              console.log("Marking thread as done, reason: " + notificationDeletionReason)
               await github.rest.activity.markThreadAsDone({
                 thread_id: notification.id,
               })
@@ -144,7 +150,7 @@ jobs:
                 }
               }
 
-              if (pullRequest.merged) {
+              if (canNotificationBeDeleted) {
                 console.log("Marking thread as done")
                 await github.rest.activity.markThreadAsDone({
                   thread_id: notification.id,
