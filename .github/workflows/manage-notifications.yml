@@ -81,7 +81,10 @@ jobs:
           for (const notification of notifications) {
             const notificationToLog = { ...notification }
             if (notificationToLog.repository) {
-              notificationToLog.repository = {}
+              notificationToLog.repository = {
+                full_name: notification.repository.full_name,
+                html_url: notification.repository.html_url,
+              }
             }
             console.log(JSON.stringify(notificationToLog, null, 2))
           }
