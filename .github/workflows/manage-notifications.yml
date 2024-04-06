@@ -73,7 +73,7 @@ jobs:
           }
 
           const notifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
-            all: true,
+            //all: true,
           })
           for (const notification of notifications) {
             const notificationToLog = { ...notification }
