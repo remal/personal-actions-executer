@@ -75,8 +75,8 @@ jobs:
           const nowMillis = new Date().getTime()
           const sinceMillis = nowMillis - (7 * 24 * 3600 * 1000)
           const notifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
-            all: true,
-            since: new Date(sinceMillis).toISOString(),
+            //all: true,
+            //since: new Date(sinceMillis).toISOString(),
           })
           for (const notification of notifications) {
             const notificationToLog = { ...notification }
@@ -86,7 +86,7 @@ jobs:
                 html_url: notification.repository.html_url,
               }
             }
-            console.log(JSON.stringify(notificationToLog, null, 2))
+            //console.log(JSON.stringify(notificationToLog, null, 2))
           }
 
           for (const notification of notifications) {
