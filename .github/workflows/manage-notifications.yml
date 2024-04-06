@@ -136,9 +136,7 @@ jobs:
             }).then(it => it.data)
             console.log("::group::Pull Request '" + notification.subject.title + "' (" + notification.id + ")")
 
-            if (pullRequest.user.login === 'renovate[bot]'
-              || pullRequest.user.login === 'dependabot[bot]'
-            ) {
+            if (pullRequest.user.login.endsWith('[bot]')) {
               let canNotificationBeDeleted = false
               if (!canNotificationBeDeleted) {
                 if (pullRequest.closed_at != null) {
@@ -155,7 +153,12 @@ jobs:
                 await github.rest.activity.markThreadAsDone({
                   thread_id: notification.id,
                 })
+
+              } else {
+                console.log("PR may require attention")
               }
+            } else {
+                console.log("Not a PR from a bot")
             }
             console.log("::endgroup::")
           }
