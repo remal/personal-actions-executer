@@ -72,8 +72,11 @@ jobs:
             })
           }
 
+          const nowMillis = new Date().getTime()
+          const sinceMillis = nowMillis - (2 * 24 * 3600 * 1000)
           const notifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
             //all: true,
+            since: new Date(sinceMillis).toISOString(),
           })
           for (const notification of notifications) {
             const notificationToLog = { ...notification }
@@ -84,7 +87,20 @@ jobs:
           }
 
           for (const notification of notifications) {
-            if (notification.subject == null || notification.subject.type !== 'PullRequest') continue;
+            if (notification.subject?.type !== 'CheckSuite') continue;
+            const title = notification.subject?.title ?? ''
+            if (title.contains(' workflow run cancelled for ')) {
+              console.log("::group::" + title)
+              console.log("Marking thread as done")
+              await github.rest.activity.markThreadAsDone({
+                thread_id: notification.id,
+              })
+              console.log("::endgroup::")
+            }
+          }
+
+          for (const notification of notifications) {
+            if (notification.subject?.type !== 'PullRequest') continue;
             if (notification.repository == null) continue;
 
             if (notification.reason !== 'assign'
