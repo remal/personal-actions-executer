@@ -86,7 +86,7 @@ jobs:
                 html_url: notification.repository.html_url,
               }
             }
-            console.log(JSON.stringify(notificationToLog, null, 2))
+            //console.log(JSON.stringify(notificationToLog, null, 2))
           }
 
           for (const notification of notifications) {
@@ -143,12 +143,12 @@ jobs:
             ) {
               let canNotificationBeDeleted = false
               if (!canNotificationBeDeleted) {
-                if (pullRequest.closed_at != null) {
-                  canNotificationBeDeleted = true
-                  console.log("Pull Request is closed")
-                } else if (pullRequest.merged_at != null) {
+                if (pullRequest.merged_at != null) {
                   canNotificationBeDeleted = true
                   console.log("Pull Request is merged")
+                } else if (pullRequest.closed_at != null) {
+                  canNotificationBeDeleted = true
+                  console.log("Pull Request is closed")
                 }
               }
 
