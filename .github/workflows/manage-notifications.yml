@@ -116,6 +116,7 @@ jobs:
             if (notification.reason !== 'assign'
               && notification.reason !== 'subscribed'
               && notification.reason !== 'review_requested'
+              && notification.reason !== 'author'
             ) {
               //console.log(JSON.stringify(notification, null, 2))
               continue;
