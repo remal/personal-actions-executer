@@ -34,12 +34,14 @@ jobs:
           echo "::warning::Not enough rate limits!"
           if [ "${{github.event_name != 'schedule'}}" == "true" ]; then
             echo "::warning::Executing anyway, as event is '${{github.event_name}}'"
+            echo 'enough=true' >> $GITHUB_OUTPUT
+          else
+            echo 'enough=false' >> $GITHUB_OUTPUT
           fi
-          echo 'enough=false' >> $GITHUB_OUTPUT
         fi
 
     - name: Manage notifications
-      if: ${{github.event_name != 'schedule' || fromJSON(steps.decision.outputs.enough) == true}}
+      if: ${{fromJSON(steps.decision.outputs.enough) == true}}
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
