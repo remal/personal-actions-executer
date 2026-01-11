@@ -10,6 +10,9 @@ on:
     - '.github/workflows/bump-repository-activity.yml'
   workflow_dispatch: { }
 
+permissions:
+  contents: write
+
 env:
   PUSH_BACK_TOKEN: ${{secrets.PUSH_BACK_TOKEN}}
 
