@@ -34,6 +34,7 @@ jobs:
               const { data: rulesets } = await github.rest.repos.getRepoRulesets({
                 owner: repo.owner.login,
                 repo: repo.name,
+                includes: ['conditions'],
               })
               core.info(`Found ${rulesets.length} ruleset(s)`)
 
