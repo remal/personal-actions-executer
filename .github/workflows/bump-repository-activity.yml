@@ -8,60 +8,51 @@ on:
     - main
     paths:
     - '.github/workflows/bump-repository-activity.yml'
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        required: true
+        default: 'false'
+        description: Set to 'true' to enable dry run
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+      maxInactivityDays:
+        required: true
+        default: 14
+        description: Max inactivity days. If there are no commits during this duration, a new commit will be created.
+        type: number
 
 permissions:
-  contents: write
+  id-token: write
 
-env:
-  PUSH_BACK_TOKEN: ${{secrets.PUSH_BACK_TOKEN}}
+concurrency:
+  group: bump-repository-activity-${{github.ref}}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  rate-limits:
-    name: Check rate limits
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    concurrency:
-      group: bump-repository-activity
-      cancel-in-progress: true
-    steps:
-    - name: Get rate limits
-      uses: remal-github-actions/get-rate-limits@v1
-      id: getRateLimits
-      with:
-        githubToken: ${{env.PUSH_BACK_TOKEN || github.token}}
-    - name: Make decision
-      id: decision
-      run: |
-        echo "Core rate limit usage: ${{steps.getRateLimits.outputs.coreUsage}}"
-        if [ "${{steps.getRateLimits.outputs.coreUsage < 75}}" == "true" ]; then
-          echo "Enough rate limits"
-          echo 'enough=true' >> $GITHUB_OUTPUT
-        else
-          echo "::warning::Not enough rate limits!"
-          if [ "${{github.event_name != 'schedule'}}" == "true" ]; then
-            echo "::warning::Executing anyway, as event is '${{github.event_name}}'"
-          fi
-          echo 'enough=false' >> $GITHUB_OUTPUT
-        fi
-    outputs:
-      enough: ${{steps.decision.outputs.enough}}
-
   bump-repository-activity:
-    needs:
-    - rate-limits
-    if: ${{github.event_name != 'schedule' || fromJSON(needs.rate-limits.outputs.enough) == true}}
     name: Bump repository activity
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    concurrency:
-      group: bump-repository-activity
-      cancel-in-progress: true
     steps:
+    - name: Get GitHub Token
+      id: get-token
+      uses: remal/github-repository-token-issuer@v1
+      with:
+        scopes: |
+          contents: write
+
     - name: Bump repository activity
-      if: ${{env.PUSH_BACK_TOKEN}}
       uses: remal-github-actions/bump-repository-activity@v1
       with:
-        githubToken: ${{env.PUSH_BACK_TOKEN}}
+        dryRun: ${{inputs.dryRun || 'false'}}
+        githubToken: ${{steps.get-token.outputs.token}}
+        maxInactivityDays: ${{inputs.maxInactivityDays || 14}}
         bumperFile: 'repository-activity.bumper'
         commitMessage: '[push-back] Bump repository activity'

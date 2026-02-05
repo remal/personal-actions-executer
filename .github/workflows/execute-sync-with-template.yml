@@ -8,18 +8,19 @@ on:
     - '.github/workflows/execute-sync-with-template.yml'
   workflow_dispatch: { }
 
+concurrency:
+  group: execute-sync-with-template
+  cancel-in-progress: true
+
 jobs:
   sync-with-template:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    concurrency:
-      group: execute-sync-with-template
-      cancel-in-progress: true
     steps:
     - name: Execute sync-with-template.yml for all repos
       uses: actions/github-script@v8
       with:
-        github-token: ${{secrets.PERSONAL_ACCESS_TOKEN}}    
+        github-token: ${{secrets.PERSONAL_ACCESS_TOKEN}}
         script: |
           const repos = await github.paginate(github.rest.repos.listForAuthenticatedUser, {
             visibility: 'public',
@@ -38,12 +39,12 @@ jobs:
                 () => true,
                 error => { if (error.response && error.response.status === 404) return false; else throw error; }
               )
-              
+
               if (!workflowExists) {
                 core.info("Workflow file doesn't exist: " + workflowFile)
                 return
               }
-              
+
               core.info("Creating a workflow dispatch event for " + workflowFile)
               await github.rest.actions.createWorkflowDispatch({
                 owner: repo.owner.login,

@@ -8,6 +8,10 @@ on:
     - '.github/workflows/migrate-to-rulesets.yml'
   workflow_dispatch: { }
 
+concurrency:
+  group: migrate-to-rulesets
+  cancel-in-progress: false
+
 jobs:
   migrate-to-rulesets:
     runs-on: ubuntu-latest
