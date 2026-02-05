@@ -25,24 +25,87 @@ jobs:
             if (repo.fork) continue
             if (repo.archived) continue
             if (!repo.permissions.push) continue
-            await core.group("Processing " + repo.full_name, async () => {
-              core.info(`Default branch: ${repo.default_branch}`)
+            await core.group(repo.full_name, async () => {
+              const { data: rulesets } = await github.rest.repos.getRepoRulesets({
+                owner: repo.owner.login,
+                repo: repo.name,
+              })
+              const defaultBranchRuleset = rulesets.find(ruleset =>
+                ruleset.conditions?.ref_name?.include?.includes('~DEFAULT_BRANCH')
+              )
+              if (defaultBranchRuleset) {
+                core.info('Ruleset for default branch already exists:')
+                core.info(JSON.stringify(defaultBranchRuleset, null, 2))
+                throw new Error('Testing')
+                return
+              }
 
+              let protection
               try {
-                const { data: protection } = await github.rest.repos.getBranchProtection({
+                const response = await github.rest.repos.getBranchProtection({
                   owner: repo.owner.login,
                   repo: repo.name,
                   branch: repo.default_branch,
                 })
-
-                core.info('Branch protection rules:')
-                core.info(JSON.stringify(protection, null, 2))
+                protection = response.data
               } catch (error) {
                 if (error.status === 404) {
                   core.info('No branch protection rules configured')
-                } else {
-                  core.warning(`Failed to get branch protection: ${error.message}`)
+                  return
                 }
+                throw error
               }
+
+              const statusChecks = protection.required_status_checks
+              if (!statusChecks?.checks?.length) {
+                core.info('No required status checks configured')
+                return
+              }
+
+              core.info('Required status checks:')
+              core.info(JSON.stringify(statusChecks, null, 2))
+
+              const ruleset = {
+                name: 'default',
+                target: 'branch',
+                enforcement: 'active',
+                bypass_actors: [
+                  {
+                    actor_id: 2637135,
+                    actor_type: 'Integration',
+                    bypass_mode: 'always',
+                  },
+                ],
+                conditions: {
+                  ref_name: {
+                    include: ['~DEFAULT_BRANCH'],
+                    exclude: [],
+                  },
+                },
+                rules: [
+                  {
+                    type: 'required_status_checks',
+                    parameters: {
+                      strict_required_status_checks_policy: statusChecks.strict,
+                      required_status_checks: statusChecks.checks.map(check => ({
+                        context: check.context,
+                        integration_id: check.app_id,
+                      })),
+                    },
+                  },
+                ],
+              }
+
+              core.info('Creating ruleset:')
+              core.info(JSON.stringify(ruleset, null, 2))
+
+              await github.rest.repos.createRepoRuleset({
+                owner: repo.owner.login,
+                repo: repo.name,
+                ...ruleset,
+              })
+
+              core.info('Ruleset created successfully')
+              throw new Error('Testing')
             })
           }
