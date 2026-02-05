@@ -134,6 +134,6 @@ jobs:
               })
               core.info('Branch protection rule deleted')
 
-              if (repo.full_name.startsWith('remal-gradle-)) throw new Error('Testing')
+              if (repo.full_name.startsWith('remal-gradle-')) throw new Error('Testing')
             })
           }
