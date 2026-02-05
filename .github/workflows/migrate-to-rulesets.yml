@@ -50,8 +50,6 @@ jobs:
                 }
               }
 
-              throw new Error('Testing')
-
               core.info('Fetching branch protection rules...')
               let protection
               try {
@@ -139,7 +137,5 @@ jobs:
                 branch: repo.default_branch,
               })
               core.info('Branch protection rule deleted')
-
-              if (repo.full_name.startsWith('remal-gradle-')) throw new Error('Testing')
             })
           }
