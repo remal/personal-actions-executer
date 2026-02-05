@@ -75,17 +75,41 @@ jobs:
               core.info(JSON.stringify(statusChecks, null, 2))
 
               core.info('Creating ruleset...')
+              const bypassActors = [
+                {
+                  actor_id: 2637135,
+                  actor_type: 'Integration',
+                  bypass_mode: 'always',
+                },
+                {
+                  actor_id: 5,
+                  actor_type: 'RepositoryRole',
+                  bypass_mode: 'always',
+                },
+                {
+                  actor_id: null,
+                  actor_type: 'OrganizationAdmin',
+                  bypass_mode: 'always',
+                },
+              ]
+              if (false && repo.owner.type === 'User') {
+                bypassActors.push({
+                  actor_id: 5,
+                  actor_type: 'RepositoryRole',
+                  bypass_mode: 'always',
+                })
+              } else if (false && repo.owner.type === 'Organization') {
+                bypassActors.push({
+                  actor_id: null,
+                  actor_type: 'OrganizationAdmin',
+                  bypass_mode: 'always',
+                })
+              }
               const ruleset = {
-                name: 'default',
+                name: 'default - status checks',
                 target: 'branch',
                 enforcement: 'active',
-                bypass_actors: [
-                  {
-                    actor_id: 2637135,
-                    actor_type: 'Integration',
-                    bypass_mode: 'always',
-                  },
-                ],
+                bypass_actors: bypassActors,
                 conditions: {
                   ref_name: {
                     include: ['~DEFAULT_BRANCH'],
