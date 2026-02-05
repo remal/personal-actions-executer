@@ -25,21 +25,25 @@ jobs:
             if (repo.fork) continue
             if (repo.archived) continue
             if (!repo.permissions.push) continue
-            await core.group(repo.full_name, async () => {
+            await core.group("Processing " + repo.full_name, async () => {
+              core.info('Fetching existing rulesets...')
               const { data: rulesets } = await github.rest.repos.getRepoRulesets({
                 owner: repo.owner.login,
                 repo: repo.name,
               })
+              core.info(`Found ${rulesets.length} ruleset(s)`)
+
               const defaultBranchRuleset = rulesets.find(ruleset =>
                 ruleset.conditions?.ref_name?.include?.includes('~DEFAULT_BRANCH')
               )
               if (defaultBranchRuleset) {
-                core.info('Ruleset for default branch already exists:')
+                core.info('Skipping: Ruleset for default branch already exists:')
                 core.info(JSON.stringify(defaultBranchRuleset, null, 2))
                 throw new Error('Testing')
                 return
               }
 
+              core.info('Fetching branch protection rules...')
               let protection
               try {
                 const response = await github.rest.repos.getBranchProtection({
@@ -48,9 +52,10 @@ jobs:
                   branch: repo.default_branch,
                 })
                 protection = response.data
+                core.info('Branch protection rules fetched')
               } catch (error) {
                 if (error.status === 404) {
-                  core.info('No branch protection rules configured')
+                  core.info('Skipping: No branch protection rules configured')
                   return
                 }
                 throw error
@@ -58,13 +63,14 @@ jobs:
 
               const statusChecks = protection.required_status_checks
               if (!statusChecks?.checks?.length) {
-                core.info('No required status checks configured')
+                core.info('Skipping: No required status checks configured')
                 return
               }
 
-              core.info('Required status checks:')
+              core.info('Required status checks found:')
               core.info(JSON.stringify(statusChecks, null, 2))
 
+              core.info('Creating ruleset...')
               const ruleset = {
                 name: 'default',
                 target: 'branch',
@@ -95,17 +101,22 @@ jobs:
                   },
                 ],
               }
-
-              core.info('Creating ruleset:')
               core.info(JSON.stringify(ruleset, null, 2))
-
               await github.rest.repos.createRepoRuleset({
                 owner: repo.owner.login,
                 repo: repo.name,
                 ...ruleset,
               })
+              core.info('Ruleset created')
 
-              core.info('Ruleset created successfully')
+              core.info('Deleting branch protection rule...')
+              await github.rest.repos.deleteBranchProtection({
+                owner: repo.owner.login,
+                repo: repo.name,
+                branch: repo.default_branch,
+              })
+              core.info('Branch protection rule deleted')
+
               throw new Error('Testing')
             })
           }
