@@ -43,7 +43,6 @@ jobs:
               if (defaultBranchRuleset) {
                 core.info('Skipping: Ruleset for default branch already exists:')
                 core.info(JSON.stringify(defaultBranchRuleset, null, 2))
-                throw new Error('Testing')
                 return
               }
 
@@ -135,6 +134,6 @@ jobs:
               })
               core.info('Branch protection rule deleted')
 
-              throw new Error('Testing')
+              if (repo.owner.type != 'User') throw new Error('Testing')
             })
           }
