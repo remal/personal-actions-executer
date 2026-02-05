@@ -36,7 +36,8 @@ jobs:
                 repo: repo.name,
                 includes: ['conditions'],
               })
-              core.info(`Found ${rulesets.length} ruleset(s)`)
+              core.info(`Found ${rulesets.length} ruleset(s):`)
+              core.info(JSON.stringify(rulesets, null, 2))
 
               const defaultBranchRuleset = rulesets.find(ruleset =>
                 ruleset.conditions?.ref_name?.include?.includes('~DEFAULT_BRANCH')
