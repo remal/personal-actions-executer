@@ -31,22 +31,26 @@ jobs:
             if (!repo.permissions.push) continue
             await core.group("Processing " + repo.full_name, async () => {
               core.info('Fetching existing rulesets...')
-              const { data: rulesets } = await github.rest.repos.getRepoRulesets({
+              const { data: rulesetsList } = await github.rest.repos.getRepoRulesets({
                 owner: repo.owner.login,
                 repo: repo.name,
-                includes: ['conditions'],
               })
-              core.info(`Found ${rulesets.length} ruleset(s):`)
-              core.info(JSON.stringify(rulesets, null, 2))
+              core.info(`Found ${rulesetsList.length} ruleset(s)`)
 
-              const defaultBranchRuleset = rulesets.find(ruleset =>
-                ruleset.conditions?.ref_name?.include?.includes('~DEFAULT_BRANCH')
-              )
-              if (defaultBranchRuleset) {
-                core.info('Skipping: Ruleset for default branch already exists:')
-                core.info(JSON.stringify(defaultBranchRuleset, null, 2))
-                return
+              for (const rulesetSummary of rulesetsList) {
+                const { data: ruleset } = await github.rest.repos.getRepoRuleset({
+                  owner: repo.owner.login,
+                  repo: repo.name,
+                  ruleset_id: rulesetSummary.id,
+                })
+                if (ruleset.conditions?.ref_name?.include?.includes('~DEFAULT_BRANCH')) {
+                  core.info('Skipping: Ruleset for default branch already exists:')
+                  core.info(JSON.stringify(ruleset, null, 2))
+                  return
+                }
               }
+
+              throw new Error('Testing')
 
               core.info('Fetching branch protection rules...')
               let protection
