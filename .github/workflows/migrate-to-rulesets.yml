@@ -81,24 +81,14 @@ jobs:
                   actor_type: 'Integration',
                   bypass_mode: 'always',
                 },
-                {
-                  actor_id: 5,
-                  actor_type: 'RepositoryRole',
-                  bypass_mode: 'always',
-                },
-                {
-                  actor_id: null,
-                  actor_type: 'OrganizationAdmin',
-                  bypass_mode: 'always',
-                },
               ]
-              if (false && repo.owner.type === 'User') {
+              if (repo.owner.type === 'User') {
                 bypassActors.push({
                   actor_id: 5,
                   actor_type: 'RepositoryRole',
                   bypass_mode: 'always',
                 })
-              } else if (false && repo.owner.type === 'Organization') {
+              } else if (repo.owner.type === 'Organization') {
                 bypassActors.push({
                   actor_id: null,
                   actor_type: 'OrganizationAdmin',
