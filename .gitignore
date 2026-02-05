@@ -1,0 +1,91 @@
+# Common:
+*~
+.DS_Store
+
+
+# Ignore generated credentials from google-github-actions/auth
+gha-creds-*.json
+
+
+# Claude
+.claude/*.local.*
+
+
+# Logs:
+log/
+!**/src/**/log/
+*.log
+
+
+# Java:
+hs_err_pid*
+java_pid*.hprof
+
+
+# Maven:
+target/
+!**/src/**/target/
+
+
+# Gradle:
+build/
+!**/src/**/build/
+.gradle/
+
+
+# Kotlin:
+.kotlin/
+
+
+# NodeJS:
+node_modules/
+
+
+# Terraform state, variables, and backup files
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+#*.tfvars
+*.tfvars.backup
+.terraform/
+
+
+# IntelliJ IDEA plugins:
+.intellijPlatform/
+.qodana/
+
+
+# IntelliJ:
+out/
+!**/src/**/out/
+/layout.json
+/__placeholder__.js
+/.idea/*
+!/.idea/.editorconfig
+!/.idea/groovyc.xml
+!/.idea/jsonSchemas.xml
+!/.idea/externalDependencies.xml
+!/.idea/saveactions_settings.xml
+!/.idea/google-java-format.xml
+!/.idea/inspectionProfiles/
+!/.idea/inspectionProfiles/*
+!/.idea/jsLinters/
+!/.idea/jsLinters/*
+!/.idea/runConfigurations/
+!/.idea/runConfigurations/*
+!/.idea/scopes/
+!/.idea/scopes/*
+!/.idea/copyright/
+!/.idea/copyright/*
+!/.idea/dictionaries/
+/.idea/dictionaries/*
+!/.idea/dictionaries/.gitkeep
+*.iml
+*.iws
+*.*___jb_tmp___
+
+
+# Eclipse:
+.classpath
+.project
+.settings/

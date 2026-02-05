@@ -1,0 +1,48 @@
+name: Migrate to rulesets
+
+on:
+  push:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/migrate-to-rulesets.yml'
+  workflow_dispatch: { }
+
+jobs:
+  migrate-to-rulesets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - name: Migrate branch protection rules to rulesets for all public repos
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{secrets.PERSONAL_ACCESS_TOKEN}}
+        script: |
+          const repos = await github.paginate(github.rest.repos.listForAuthenticatedUser, {
+            visibility: 'public',
+          })
+          for (const repo of repos) {
+            if (repo.fork) continue
+            if (repo.archived) continue
+            if (!repo.permissions.push) continue
+            await core.group("Processing " + repo.full_name, async () => {
+              core.info(`Default branch: ${repo.default_branch}`)
+
+              try {
+                const { data: protection } = await github.rest.repos.getBranchProtection({
+                  owner: repo.owner.login,
+                  repo: repo.name,
+                  branch: repo.default_branch,
+                })
+
+                core.info('Branch protection rules:')
+                core.info(JSON.stringify(protection, null, 2))
+              } catch (error) {
+                if (error.status === 404) {
+                  core.info('No branch protection rules configured')
+                } else {
+                  core.warning(`Failed to get branch protection: ${error.message}`)
+                }
+              }
+            })
+          }
