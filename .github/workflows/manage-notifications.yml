@@ -23,7 +23,7 @@ jobs:
       uses: remal-github-actions/get-rate-limits@v1
       id: rate-limits
       with:
-        githubToken: ${{secrets.NOTIFICATIONS_TOKEN || github.token}}
+        githubToken: ${{secrets.NOTIFICATIONS_TOKEN || env.NOTIFICATIONS_TOKEN || github.token}}
     - name: Make rate limits decision
       id: decision
       run: |
