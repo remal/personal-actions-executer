@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 45
     steps:
     - name: Execute sync-with-template.yml for all repos
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{secrets.PERSONAL_ACCESS_TOKEN}}
         script: |
