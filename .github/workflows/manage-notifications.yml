@@ -43,7 +43,7 @@ jobs:
 
     - name: Manage notifications
       if: ${{fromJSON(steps.decision.outputs.enough) == true}}
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       env:
         DISMISS_CLOSED_PR_NOTIFICATION_REPOS: ${{vars.DISMISS_CLOSED_PR_NOTIFICATION_REPOS || ''}}
         DISMISS_FAILED_PIPELINE_REPOS: ${{vars.DISMISS_FAILED_PIPELINE_REPOS || ''}}
