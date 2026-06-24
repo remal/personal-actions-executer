@@ -50,22 +50,6 @@ jobs:
       with:
         github-token: ${{ secrets.NOTIFICATIONS_TOKEN }}
         script: |
-          if (github.rest.activity.markThreadAsDone == null) {
-            console.log("::warning::Registering `activity.markThreadAsDone`")
-            Object.assign(github.rest.activity, {
-              markThreadAsDone: github.request.defaults({
-                method: "DELETE",
-                url: "/notifications/threads/{thread_id}",
-                params: {
-                  thread_id: {
-                    required: true,
-                    type: "string",
-                  },
-                },
-              }),
-            })
-          }
-
           const authenticatedUser = await github.rest.users.getAuthenticated().then(it => it.data)
 
           const dismissFailedPipelineRepos = (process.env.DISMISS_FAILED_PIPELINE_REPOS ?? '')
@@ -95,8 +79,10 @@ jobs:
             //console.log(JSON.stringify(notificationToLog, null, 2))
           }
 
-          for (const notification of notifications) {
-            if (notification.subject?.type !== 'CheckSuite') continue;
+          const checkSuiteNotifications = notifications.filter(n => n.subject?.type === 'CheckSuite')
+          const dismissedCheckSuiteIds = new Set()
+
+          for (const notification of checkSuiteNotifications) {
             const title = notification.subject?.title ?? ''
 
             let notificationDeletionReason = null
@@ -107,8 +93,34 @@ jobs:
             }
 
             if (notificationDeletionReason != null) {
+              dismissedCheckSuiteIds.add(notification.id)
               console.log("::group::" + title)
               console.log("Marking thread as done, reason: " + notificationDeletionReason)
+              await github.rest.activity.markThreadAsDone({
+                thread_id: notification.id,
+              })
+              console.log("::endgroup::")
+            }
+          }
+
+          const checkSuiteTitlePattern = /^(.+) workflow run(?:, Attempt #\d+)? \w+ for (.+) branch$/
+          const checkSuiteGroups = new Map()
+          for (const notification of checkSuiteNotifications) {
+            if (dismissedCheckSuiteIds.has(notification.id)) continue
+            const title = notification.subject?.title ?? ''
+            const match = title.match(checkSuiteTitlePattern)
+            if (!match) continue
+            const key = (notification.repository?.full_name ?? '') + '|' + match[1] + '|' + match[2]
+            if (!checkSuiteGroups.has(key)) checkSuiteGroups.set(key, [])
+            checkSuiteGroups.get(key).push(notification)
+          }
+          for (const [key, group] of checkSuiteGroups) {
+            if (group.length <= 1) continue
+            group.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+            for (let i = 1; i < group.length; i++) {
+              const notification = group[i]
+              console.log("::group::" + notification.subject?.title)
+              console.log("Marking thread as done, reason: duplicate (keeping newer notification " + group[0].id + ")")
               await github.rest.activity.markThreadAsDone({
                 thread_id: notification.id,
               })
