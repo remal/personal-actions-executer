@@ -46,6 +46,7 @@ jobs:
       if: ${{fromJSON(steps.decision.outputs.enough) == true}}
       id: cache-key
       env:
+        GH_TOKEN: ${{github.token}}
         DISMISS_CLOSED_PR_NOTIFICATION_REPOS: ${{vars.DISMISS_CLOSED_PR_NOTIFICATION_REPOS || ''}}
         DISMISS_FAILED_PIPELINE_REPOS: ${{vars.DISMISS_FAILED_PIPELINE_REPOS || ''}}
       run: |
