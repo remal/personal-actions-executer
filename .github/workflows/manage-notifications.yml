@@ -12,12 +12,12 @@ on:
 
 concurrency:
   group: manage-notifications
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   manage-notifications:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
     - name: Get rate limits
       uses: remal-github-actions/get-rate-limits@v1
