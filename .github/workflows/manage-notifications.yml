@@ -72,24 +72,34 @@ jobs:
         github-token: ${{secrets.NOTIFICATIONS_TOKEN}}
         script: |
           const fs = require('fs')
-          const cacheFile = '.notifications-cache/processed.txt'
-          const processedCache = new Map()
-          try {
-            for (const line of fs.readFileSync(cacheFile, 'utf8').split('\n')) {
+          function loadCache(file) {
+            const cache = new Map()
+            if (!fs.existsSync(file)) return cache
+            for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
               if (!line) continue
               const sep = line.indexOf('\t')
               if (sep < 0) continue
-              processedCache.set(line.substring(0, sep), line.substring(sep + 1))
+              cache.set(line.substring(0, sep), line.substring(sep + 1))
             }
-            console.log('Loaded ' + processedCache.size + ' cached notifications')
-          } catch (e) {
-            console.log('No cache found, starting fresh')
+            return cache
           }
-          async function markThreadAsDone(threadId) {
-            await github.rest.activity.markThreadAsDone({ thread_id: threadId })
+          const processedCacheFile = '.notifications-cache/processed.txt'
+          const doneCacheFile = '.notifications-cache/done.txt'
+          const processedCache = loadCache(processedCacheFile)
+          const doneCache = loadCache(doneCacheFile)
+          console.log('Loaded ' + processedCache.size + ' cached processed, ' + doneCache.size + ' cached done')
+          const markedDone = new Map()
+          async function markThreadAsDone(notification) {
+            if (doneCache.get(notification.id) === notification.updated_at) {
+              console.log("Already marked as done (cached), skipping")
+              return
+            }
+            await github.rest.activity.markThreadAsDone({ thread_id: notification.id })
+            markedDone.set(notification.id, notification.updated_at)
           }
 
-          const ignoredIds = new Set()
+          // excluded from processed cache so they are re-evaluated on every run
+          const reprocessIds = new Set()
 
           const authenticatedUser = await github.rest.users.getAuthenticated().then(it => it.data)
 
@@ -137,7 +147,7 @@ jobs:
             if (notificationDeletionReason != null) {
               console.log("::group::" + title)
               console.log("Marking thread as done, reason: " + notificationDeletionReason)
-              await markThreadAsDone(notification.id)
+              await markThreadAsDone(notification)
               console.log("::endgroup::")
             } else {
               remainingCheckSuiteNotifications.push(notification)
@@ -145,7 +155,7 @@ jobs:
           }
 
           // Remaining CheckSuite notifications should not be cached, so they are re-evaluated on every run
-          remainingCheckSuiteNotifications.forEach(n => ignoredIds.add(n.id))
+          remainingCheckSuiteNotifications.forEach(n => reprocessIds.add(n.id))
 
           const checkSuiteTitlePattern = /^(.+) workflow run(?:, Attempt #\d+)? \w+ for (.+) branch$/
           const checkSuiteGroups = new Map()
@@ -167,7 +177,7 @@ jobs:
               const notification = group[i]
               console.log("::group::" + notification.subject?.title)
               console.log("Marking thread as done, reason: duplicate (keeping newer notification " + group[0].id + ")")
-              await markThreadAsDone(notification.id)
+              await markThreadAsDone(notification)
               console.log("::endgroup::")
             }
           }
@@ -198,7 +208,7 @@ jobs:
               )
               if (!isReviewer) {
                 console.log("Not in reviewers list, marking thread as done")
-                await markThreadAsDone(notification.id)
+                await markThreadAsDone(notification)
                 console.log("::endgroup::")
                 continue
               }
@@ -217,10 +227,10 @@ jobs:
               console.log("Notification is not eligible for auto-dismissal")
             } else if (pullRequest.merged_at != null) {
               console.log("Marking thread as done, reason: " + processingReason + ", merged")
-              await markThreadAsDone(notification.id)
+              await markThreadAsDone(notification)
             } else if (pullRequest.closed_at != null) {
               console.log("Marking thread as done, reason: " + processingReason + ", closed")
-              await markThreadAsDone(notification.id)
+              await markThreadAsDone(notification)
             } else {
               console.log("PR may require attention (" + processingReason + ")")
             }
@@ -230,9 +240,21 @@ jobs:
           fs.mkdirSync('.notifications-cache', { recursive: true })
           const cacheLines = []
           for (const n of allFetchedNotifications) {
-            if (ignoredIds.has(n.id)) continue
+            if (reprocessIds.has(n.id)) continue
             cacheLines.push(n.id + '\t' + n.updated_at)
           }
-          fs.writeFileSync(cacheFile, cacheLines.join('\n'))
-          console.log('Wrote ' + cacheLines.length + ' notifications to cache')
+          fs.writeFileSync(processedCacheFile, cacheLines.join('\n'))
+          console.log('Wrote ' + cacheLines.length + ' notifications to processed cache')
+
+          for (const [id, updatedAt] of markedDone) {
+            doneCache.set(id, updatedAt)
+          }
+          const fetchedIds = new Set(allFetchedNotifications.map(n => n.id))
+          const doneLines = []
+          for (const [id, updatedAt] of doneCache) {
+            if (!fetchedIds.has(id)) continue
+            doneLines.push(id + '\t' + updatedAt)
+          }
+          fs.writeFileSync(doneCacheFile, doneLines.join('\n'))
+          console.log('Wrote ' + doneLines.length + ' notifications to done cache')
 
