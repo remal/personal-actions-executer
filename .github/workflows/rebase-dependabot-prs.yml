@@ -180,6 +180,8 @@ jobs:
                 if (!dependabotLogins.includes(login)) continue
                 if (item.event === 'head_ref_force_pushed') break
                 const body = (item.body ?? '').trim()
+                // Dependabot's "already up-to-date" reply mentions `@dependabot recreate` without suggesting it
+                if (body.includes('already up-to-date with')) continue
                 if (body.match(/(`|\b)@dependabot recreate(\b|`)/)) {
                   recreateSuggestion = body.split(/[\r\n]+/)[0].trim()
                   break
