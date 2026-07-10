@@ -1,0 +1,208 @@
+name: Rebase Dependabot PRs
+
+on:
+  schedule:
+  - cron: '19 3 * * *'
+  push:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/rebase-dependabot-prs.yml'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        required: true
+        default: 'false'
+        description: Set to 'true' to enable dry run
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+
+concurrency:
+  group: rebase-dependabot-prs
+  cancel-in-progress: false
+
+jobs:
+  rebase-dependabot-prs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - name: Get rate limits
+      uses: remal-github-actions/get-rate-limits@v1
+      id: rate-limits
+      with:
+        githubToken: ${{secrets.DEPENDABOT_REBASE_TOKEN}}
+
+    - name: Make rate limits decision
+      id: decision
+      run: |
+        echo "Core rate limit usage: ${{steps.rate-limits.outputs.coreUsage}}"
+        if [ "${{steps.rate-limits.outputs.coreUsage < 50}}" == "true" ]; then
+          echo "Enough rate limits"
+          echo 'enough=true' | tee -a "$GITHUB_OUTPUT"
+        else
+          echo "::warning::Not enough rate limits!"
+          if [ "${{github.event_name != 'schedule'}}" == "true" ]; then
+            echo "::warning::Executing anyway, as event is '${{github.event_name}}'"
+            echo 'enough=true' | tee -a "$GITHUB_OUTPUT"
+          else
+            echo 'enough=false' | tee -a "$GITHUB_OUTPUT"
+          fi
+        fi
+
+    - name: Rebase Dependabot PRs
+      if: ${{fromJSON(steps.decision.outputs.enough) == true}}
+      uses: actions/github-script@v9
+      env:
+        DRY_RUN: ${{inputs.dryRun || 'false'}}
+        DEPENDABOT_REBASE_REPOS: ${{vars.DEPENDABOT_REBASE_REPOS || ''}}
+        DEPENDABOT_REBASE_COMMIT_AUTHORS: ${{vars.DEPENDABOT_REBASE_COMMIT_AUTHORS || ''}}
+      with:
+        github-token: ${{secrets.DEPENDABOT_REBASE_TOKEN}}
+        script: |
+          const dryRun = process.env.DRY_RUN === 'true'
+          const dependabotLogins = ['dependabot', 'dependabot[bot]']
+          const rebaseComment = '@dependabot rebase'
+
+          function parsePatterns(value) {
+            return (value ?? '')
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.length > 0)
+              .map(pattern => new RegExp(`^${pattern.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`))
+          }
+          const allowedRepoPatterns = parsePatterns(process.env.DEPENDABOT_REBASE_REPOS)
+          const allowedAuthorPatterns = parsePatterns(process.env.DEPENDABOT_REBASE_COMMIT_AUTHORS)
+          if (allowedRepoPatterns.length === 0) {
+            core.info('DEPENDABOT_REBASE_REPOS is empty, nothing to process')
+            return
+          }
+
+          let dependabotPrs = 0
+          let commentedPrs = 0
+
+          const repos = await github.paginate(github.rest.repos.listForAuthenticatedUser, {
+            per_page: 100,
+          })
+          for (const repo of repos) {
+            if (repo.fork) continue
+            if (repo.archived) continue
+            if (!repo.permissions.admin) continue
+            if (!allowedRepoPatterns.some(pattern => pattern.test(repo.full_name))) continue
+
+            const pullRequests = await github.paginate(github.rest.pulls.list, {
+              owner: repo.owner.login,
+              repo: repo.name,
+              state: 'open',
+              per_page: 100,
+            })
+            for (const pullRequest of pullRequests) {
+              if (pullRequest.user == null || !dependabotLogins.includes(pullRequest.user.login)) continue
+              dependabotPrs++
+              core.info(`PullRequest ${repo.full_name}#${pullRequest.number} '${pullRequest.title}'`)
+
+              if (pullRequest.locked) {
+                core.info('  Locked, skipping')
+                continue
+              }
+
+              const comparison = await github.rest.repos.compareCommitsWithBasehead({
+                owner: repo.owner.login,
+                repo: repo.name,
+                basehead: `${pullRequest.base.ref}...${pullRequest.head.sha}`,
+                per_page: 1,
+              }).then(it => it.data)
+              if (comparison.behind_by === 0) {
+                core.info(`  Not behind ${pullRequest.base.ref}, skipping`)
+                continue
+              }
+              core.info(`  Behind ${pullRequest.base.ref} by ${comparison.behind_by} commits`)
+
+              const commits = await github.paginate(github.rest.pulls.listCommits, {
+                owner: repo.owner.login,
+                repo: repo.name,
+                pull_number: pullRequest.number,
+                per_page: 100,
+              })
+              const disallowedCommit = commits.find(commit => {
+                if (dependabotLogins.includes(commit.author?.login)) return false
+                const identities = [
+                  commit.author?.login,
+                  commit.commit?.author?.name,
+                  commit.commit?.author?.email,
+                ].filter(identity => identity != null)
+                return !identities.some(identity => allowedAuthorPatterns.some(pattern => pattern.test(identity)))
+              })
+              if (disallowedCommit != null) {
+                const identity = disallowedCommit.author?.login ?? disallowedCommit.commit?.author?.name ?? 'unknown'
+                core.info(`  Commit ${disallowedCommit.sha.substring(0, 7)} author '${identity}' blocks rebase, skipping`)
+                continue
+              }
+
+              const headCommit = await github.rest.git.getCommit({
+                owner: repo.owner.login,
+                repo: repo.name,
+                commit_sha: pullRequest.head.sha,
+              }).then(it => it.data)
+              const headCommitMillis = new Date(headCommit.committer.date).getTime()
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner: repo.owner.login,
+                repo: repo.name,
+                issue_number: pullRequest.number,
+                per_page: 100,
+              })
+
+              const pendingRebaseComment = comments.find(comment =>
+                (comment.body ?? '').trim() === rebaseComment
+                  && new Date(comment.created_at).getTime() > headCommitMillis
+              )
+              if (pendingRebaseComment != null) {
+                core.info(`  Rebase already requested at ${pendingRebaseComment.created_at}, skipping`)
+                continue
+              }
+
+              const events = await github.paginate(github.rest.issues.listEvents, {
+                owner: repo.owner.login,
+                repo: repo.name,
+                issue_number: pullRequest.number,
+                per_page: 100,
+              })
+
+              // Dependabot suggesting `@dependabot recreate` after its last force-push means rebasing won't help
+              const timeline = [...events, ...comments].sort((o1, o2) =>
+                new Date(o2.created_at || '').getTime() - new Date(o1.created_at || '').getTime()
+              )
+              let recreateSuggestion = null
+              for (const item of timeline) {
+                const login = item.actor?.login ?? item.user?.login ?? ''
+                if (!dependabotLogins.includes(login)) continue
+                if (item.event === 'head_ref_force_pushed') break
+                const body = (item.body ?? '').trim()
+                if (body.match(/(`|\b)@dependabot recreate(\b|`)/)) {
+                  recreateSuggestion = body.split(/[\r\n]+/)[0].trim()
+                  break
+                }
+              }
+              if (recreateSuggestion != null) {
+                core.warning(`  Dependabot suggested recreate, skipping: ${recreateSuggestion}`)
+                continue
+              }
+
+              if (dryRun) {
+                core.info(`  Dry run: would comment '${rebaseComment}'`)
+              } else {
+                core.info(`  Commenting '${rebaseComment}'`)
+                await github.rest.issues.createComment({
+                  owner: repo.owner.login,
+                  repo: repo.name,
+                  issue_number: pullRequest.number,
+                  body: rebaseComment,
+                })
+              }
+              commentedPrs++
+            }
+          }
+
+          core.info(`Processed ${dependabotPrs} Dependabot PRs, ${dryRun ? 'would comment on' : 'commented on'} ${commentedPrs}`)
