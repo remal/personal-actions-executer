@@ -157,6 +157,11 @@ jobs:
               const pendingRebaseComment = comments.find(comment =>
                 (comment.body ?? '').trim() === rebaseComment
                   && new Date(comment.created_at).getTime() > headCommitMillis
+                  // a Dependabot comment after the request means the request was already processed
+                  && !comments.some(reply =>
+                    dependabotLogins.includes(reply.user?.login)
+                      && new Date(reply.created_at).getTime() > new Date(comment.created_at).getTime()
+                  )
               )
               if (pendingRebaseComment != null) {
                 core.info(`  Rebase already requested at ${pendingRebaseComment.created_at}, skipping`)
