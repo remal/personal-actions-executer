@@ -100,7 +100,7 @@ jobs:
             for (const pullRequest of pullRequests) {
               if (pullRequest.user == null || !dependabotLogins.includes(pullRequest.user.login)) continue
               dependabotPrs++
-              core.info(`PullRequest ${repo.full_name}#${pullRequest.number} '${pullRequest.title}'`)
+              core.info(`PullRequest ${pullRequest.html_url} '${pullRequest.title}'`)
 
               if (pullRequest.locked) {
                 core.info('  Locked, skipping')
