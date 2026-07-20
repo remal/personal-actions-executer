@@ -35,16 +35,16 @@ jobs:
       id: decision
       run: |
         echo "Core rate limit usage: ${{steps.rate-limits.outputs.coreUsage}}"
-        if [ "${{steps.rate-limits.outputs.coreUsage < 50}}" == "true" ]; then
+        if [[ "${{steps.rate-limits.outputs.coreUsage < 50}}" == "true" ]]; then
           echo "Enough rate limits"
-          echo 'enough=true' | tee -a "$GITHUB_OUTPUT"
+          echo 'enough=true' | tee -a "${GITHUB_OUTPUT}"
         else
           echo "::warning::Not enough rate limits!"
-          if [ "${{github.event_name != 'schedule'}}" == "true" ]; then
+          if [[ "${{github.event_name != 'schedule'}}" == "true" ]]; then
             echo "::warning::Executing anyway, as event is '${{github.event_name}}'"
-            echo 'enough=true' | tee -a "$GITHUB_OUTPUT"
+            echo 'enough=true' | tee -a "${GITHUB_OUTPUT}"
           else
-            echo 'enough=false' | tee -a "$GITHUB_OUTPUT"
+            echo 'enough=false' | tee -a "${GITHUB_OUTPUT}"
           fi
         fi
 
@@ -57,8 +57,8 @@ jobs:
         DISMISS_FAILED_PIPELINE_REPOS: ${{vars.DISMISS_FAILED_PIPELINE_REPOS || ''}}
       run: |
         WORKFLOW_HASH=$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/manage-notifications.yml" --jq '.sha')
-        SETTINGS_HASH=$(printf '%s\n----\n%s' "$DISMISS_CLOSED_PR_NOTIFICATION_REPOS" "$DISMISS_FAILED_PIPELINE_REPOS" | sha256sum | cut -c1-16)
-        echo "prefix=processed-notifications-${WORKFLOW_HASH}-${SETTINGS_HASH}" | tee -a "$GITHUB_OUTPUT"
+        SETTINGS_HASH=$(printf '%s\n----\n%s' "${DISMISS_CLOSED_PR_NOTIFICATION_REPOS}" "${DISMISS_FAILED_PIPELINE_REPOS}" | sha256sum | cut -c1-16)
+        echo "prefix=processed-notifications-${WORKFLOW_HASH}-${SETTINGS_HASH}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Notifications cache
       if: ${{fromJSON(steps.decision.outputs.enough) == true}}
