@@ -38,16 +38,16 @@ jobs:
       id: decision
       run: |
         echo "Core rate limit usage: ${{steps.rate-limits.outputs.coreUsage}}"
-        if [ "${{steps.rate-limits.outputs.coreUsage < 50}}" == "true" ]; then
+        if [[ "${{steps.rate-limits.outputs.coreUsage < 50}}" == "true" ]]; then
           echo "Enough rate limits"
-          echo 'enough=true' | tee -a "$GITHUB_OUTPUT"
+          echo 'enough=true' | tee -a "${GITHUB_OUTPUT}"
         else
           echo "::warning::Not enough rate limits!"
-          if [ "${{github.event_name != 'schedule'}}" == "true" ]; then
+          if [[ "${{github.event_name != 'schedule'}}" == "true" ]]; then
             echo "::warning::Executing anyway, as event is '${{github.event_name}}'"
-            echo 'enough=true' | tee -a "$GITHUB_OUTPUT"
+            echo 'enough=true' | tee -a "${GITHUB_OUTPUT}"
           else
-            echo 'enough=false' | tee -a "$GITHUB_OUTPUT"
+            echo 'enough=false' | tee -a "${GITHUB_OUTPUT}"
           fi
         fi
 
