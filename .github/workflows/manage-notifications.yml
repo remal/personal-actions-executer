@@ -126,7 +126,7 @@ jobs:
           console.log('Looking back ' + lookbackDays + ' day(s)')
           const sinceMillis = nowMillis - (lookbackDays * 24 * 3600 * 1000)
           const allFetchedNotifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
-            all: true,
+            all: true, // includes both read and done notifications, not just unread
             since: new Date(sinceMillis).toISOString(),
           })
           for (const notification of allFetchedNotifications) {
