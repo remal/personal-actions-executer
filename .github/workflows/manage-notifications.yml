@@ -33,15 +33,20 @@ jobs:
 
     - name: Make rate limits decision
       id: decision
+      env:
+        CORE_USAGE: ${{steps.rate-limits.outputs.coreUsage}}
+        ENOUGH_RATE_LIMITS: ${{steps.rate-limits.outputs.coreUsage < 50}}
+        IS_NOT_SCHEDULE: ${{github.event_name != 'schedule'}}
+        EVENT_NAME: ${{github.event_name}}
       run: |
-        echo "Core rate limit usage: ${{steps.rate-limits.outputs.coreUsage}}"
-        if [[ "${{steps.rate-limits.outputs.coreUsage < 50}}" == "true" ]]; then
+        echo "Core rate limit usage: ${CORE_USAGE}"
+        if [[ "${ENOUGH_RATE_LIMITS}" == "true" ]]; then
           echo "Enough rate limits"
           echo 'enough=true' | tee -a "${GITHUB_OUTPUT}"
         else
           echo "::warning::Not enough rate limits!"
-          if [[ "${{github.event_name != 'schedule'}}" == "true" ]]; then
-            echo "::warning::Executing anyway, as event is '${{github.event_name}}'"
+          if [[ "${IS_NOT_SCHEDULE}" == "true" ]]; then
+            echo "::warning::Executing anyway, as event is '${EVENT_NAME}'"
             echo 'enough=true' | tee -a "${GITHUB_OUTPUT}"
           else
             echo 'enough=false' | tee -a "${GITHUB_OUTPUT}"
