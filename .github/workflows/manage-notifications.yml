@@ -232,6 +232,71 @@ jobs:
             }
           }
 
+          // Deployment approval requests (WorkflowRun / approval_requested).
+          // Mirrors the PR review_requested rule: dismiss when you are not asked personally.
+          // The notification has no link to the run, so we check per repo: if you are a personal
+          // (type 'User') reviewer on any still-waiting deployment, keep it and re-check next run;
+          // otherwise (team-only pending, or already resolved with no waiting run) mark it done.
+          const deployNotifications = notifications.filter(
+            n => n.subject?.type === 'WorkflowRun' && n.reason === 'approval_requested' && n.repository != null
+          )
+          const deployNotificationsByRepo = new Map()
+          for (const notification of deployNotifications) {
+            const key = notification.repository.full_name
+            if (!deployNotificationsByRepo.has(key)) deployNotificationsByRepo.set(key, [])
+            deployNotificationsByRepo.get(key).push(notification)
+          }
+          for (const [repoFullName, group] of deployNotificationsByRepo) {
+            const owner = group[0].repository.owner.login
+            const repo = group[0].repository.name
+
+            let personalPending = false
+            let lookupFailed = false
+            try {
+              const waitingRunsResponse = await github.request('GET /repos/{owner}/{repo}/actions/runs', {
+                owner,
+                repo,
+                status: 'waiting',
+                per_page: 100,
+              })
+              const waitingRuns = waitingRunsResponse.data.workflow_runs ?? []
+              if (waitingRuns.length >= 100) {
+                console.log("Deployment approval " + repoFullName + ": 100+ waiting runs, inspecting first 100 only")
+              }
+              for (const run of waitingRuns) {
+                const pendingDeployments = await github.request(
+                  'GET /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments',
+                  { owner, repo, run_id: run.id },
+                ).then(response => response.data)
+                for (const pendingDeployment of pendingDeployments) {
+                  for (const reviewer of (pendingDeployment.reviewers ?? [])) {
+                    if (reviewer.type === 'User' && reviewer.reviewer?.login === authenticatedUser.login) {
+                      personalPending = true
+                    }
+                  }
+                }
+                if (personalPending) break
+              }
+            } catch (error) {
+              console.log("Deployment approval " + repoFullName + ": failed to inspect pending deployments (" + error.message + ")")
+              lookupFailed = true
+            }
+
+            for (const notification of group) {
+              console.log("WorkflowRun " + repoFullName + " '" + (notification.subject?.title ?? '') + "' (" + notification.id + ")")
+              if (lookupFailed) {
+                console.log("  Leaving notification, could not inspect pending deployments")
+                reprocessIds.add(notification.id)
+              } else if (personalPending) {
+                console.log("  You are a personal reviewer on a waiting deployment, leaving notification")
+                reprocessIds.add(notification.id)
+              } else {
+                console.log("  Not asked personally (team-only or resolved), marking thread as done")
+                await markThreadAsDone(notification)
+              }
+            }
+          }
+
           fs.mkdirSync('.notifications-cache', { recursive: true })
           const cacheLines = []
           for (const n of allFetchedNotifications) {
