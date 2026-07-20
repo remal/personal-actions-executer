@@ -8,7 +8,13 @@ on:
     - main
     paths:
     - '.github/workflows/manage-notifications.yml'
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      days_to_look_back:
+        description: 'Number of days to look back for notifications'
+        required: false
+        default: 3
+        type: number
 
 concurrency:
   group: manage-notifications
@@ -68,6 +74,7 @@ jobs:
       env:
         DISMISS_CLOSED_PR_NOTIFICATION_REPOS: ${{vars.DISMISS_CLOSED_PR_NOTIFICATION_REPOS || ''}}
         DISMISS_FAILED_PIPELINE_REPOS: ${{vars.DISMISS_FAILED_PIPELINE_REPOS || ''}}
+        DAYS_TO_LOOK_BACK: ${{inputs.days_to_look_back || '3'}}
       with:
         github-token: ${{secrets.NOTIFICATIONS_TOKEN}}
         script: |
@@ -114,7 +121,10 @@ jobs:
             .filter(line => line.length > 0)
 
           const nowMillis = new Date().getTime()
-          const sinceMillis = nowMillis - (3 * 24 * 3600 * 1000)
+          const lookbackDaysRaw = Number(process.env.DAYS_TO_LOOK_BACK)
+          const lookbackDays = Number.isFinite(lookbackDaysRaw) && lookbackDaysRaw > 0 ? lookbackDaysRaw : 3
+          console.log('Looking back ' + lookbackDays + ' day(s)')
+          const sinceMillis = nowMillis - (lookbackDays * 24 * 3600 * 1000)
           const allFetchedNotifications = await github.paginate(github.rest.activity.listNotificationsForAuthenticatedUser, {
             all: true,
             since: new Date(sinceMillis).toISOString(),
